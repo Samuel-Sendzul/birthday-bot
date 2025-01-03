@@ -1,11 +1,14 @@
 import { Context } from "hono";
 import crypto from "crypto";
 import { WhatsappClient } from "../whatsapp/client";
+import { ConverationHandler } from "../domain/conversation-handler";
 
-const whatsapp = new WhatsappClient(
-  process.env.WHATSAPP_ACCESS_TOKEN,
-  process.env.WHATSAPP_BUSINESS_PHONE_NUMBER_ID
-);
+// const whatsapp = new WhatsappClient(
+//   process.env.WHATSAPP_ACCESS_TOKEN,
+//   process.env.WHATSAPP_BUSINESS_PHONE_NUMBER_ID
+// );
+
+const conversationHandler = new ConverationHandler();
 
 export async function handleWhatsappWebhookVerification(c: Context) {
   const challenge = c.req.query("hub.challenge");
@@ -27,7 +30,7 @@ function verifiyWebhookPayload(
   signatureHeader: string
 ): boolean {
   const appSecret = process.env.WHATSAPP_APP_SECRET;
-  console.log(appSecret);
+
   if (!appSecret) {
     console.error("whatsapp app secret is not defined");
     return false;
@@ -42,6 +45,8 @@ function verifiyWebhookPayload(
 
   return expectedSignature === receivedSignature;
 }
+
+function handleNewTextMessage() {}
 
 export async function handleWhatsappCallback(c: Context) {
   const requestBody = await c.req.json();
@@ -68,12 +73,28 @@ export async function handleWhatsappCallback(c: Context) {
       if (change.field === "messages" && "messages" in change.value) {
         const messages = change.value.messages;
         for (const message of messages) {
-          console.debug(
-            `received '${message.text.body}' from '${message.from}' with id '${message.id}'`
-          );
-          await whatsapp.sendTextMessage("27826229622", {
-            body: "hi!",
-          });
+          if ("text" in message) {
+            conversationHandler.handleMessage(message.from, message.text.body);
+            // console.debug(
+            //   `received '${message.text.body}' from '${message.from}' with id '${message.id}'`
+            // );
+            // const response = await whatsapp.sendInteractiveReplyButtonsMessage(
+            //   "27826229622",
+            //   "Birthday Bot ensures you always remember to message your loved one, friend, or colleague on their special day!\n\n" +
+            //     "Simply configure a new birthday reminder to receive a message on their special day with a contact button for easy, one-tap magical messaging!",
+            //   [{ id: "new-birthday", title: "New Birthday 🥳" }],
+            //   "Welcome to Birthday Bot",
+            //   "Never forget to send a birthday message again!"
+            // );
+            // console.debug(`sent interactive message with id '${response}'`);
+          }
+          if ("interactive" in message) {
+            if (message.interactive.type === "button_reply") {
+              console.debug(
+                `received button reply with id '${message.interactive.button_reply.id}' and title '${message.interactive.button_reply.title}'`
+              );
+            }
+          }
         }
       }
 
