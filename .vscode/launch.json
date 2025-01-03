@@ -9,7 +9,8 @@
       "program": "${workspaceFolder}/src/server.ts",
       "preLaunchTask": "tsc: build - tsconfig.json",
       "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-      "sourceMaps": true
+      "sourceMaps": true,
+      "envFile": "${workspaceFolder}/.env.local"
     }
   ]
 }
