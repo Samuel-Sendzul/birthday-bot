@@ -1,3 +1,5 @@
+import { Section } from "./types";
+
 export class WhatsappClient {
   private accessToken: string;
   private baseUrl: string;
@@ -62,6 +64,54 @@ export class WhatsappClient {
         `[${
           this.sendInteractiveReplyButtonsMessage.name
         }] failed to send interactive message: ${await response.text()}`
+      );
+    }
+  }
+
+  async sendInteractiveListMessage(
+    to: string,
+    titleText: string,
+    bodyText: string,
+    buttonsTitle: string,
+    sections: Section[],
+    footer?: string
+  ) {
+    const response = await fetch(`${this.baseUrl}/messages`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${this.accessToken}`,
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to,
+        type: "interactive",
+        interactive: {
+          type: "list",
+          header: {
+            type: "text",
+            text: titleText,
+          },
+          body: {
+            text: bodyText,
+          },
+          ...(footer && { footer: { text: footer } }),
+          action: {
+            button: buttonsTitle,
+            sections,
+          },
+        },
+      }),
+    });
+    if (response.status === 200) {
+      const responseBody = await response.json();
+      return responseBody.messages[0].id;
+    } else {
+      console.error(
+        `[${
+          this.sendInteractiveListMessage.name
+        }] failed to send interative list message: ${await response.text()}`
       );
     }
   }
