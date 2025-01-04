@@ -91,15 +91,16 @@ function handleStatusUpdate(change): void {
 }
 
 export async function handleWhatsappCallback(c: Context) {
-  const requestBody = await c.req.json();
-
+  const rawBody = await c.req.text();
   const isWebhookPayloadVerified = verifiyWebhookPayload(
-    JSON.stringify(requestBody),
+    rawBody,
     c.req.header("X-Hub-Signature-256")
   );
   if (!isWebhookPayloadVerified) {
     return c.text("ok", 200);
   }
+
+  const requestBody = await c.req.json();
 
   const entry = requestBody.entry;
   if (entry) {
