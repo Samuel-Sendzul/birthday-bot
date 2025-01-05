@@ -63,7 +63,7 @@ export class WhatsappClient {
       console.error(
         `[${
           this.sendInteractiveReplyButtonsMessage.name
-        }] failed to send interactive message: ${await response.text()}`
+        }] failed to send message: ${await response.text()}`
       );
     }
   }
@@ -111,7 +111,55 @@ export class WhatsappClient {
       console.error(
         `[${
           this.sendInteractiveListMessage.name
-        }] failed to send interative list message: ${await response.text()}`
+        }] failed to send message: ${await response.text()}`
+      );
+    }
+  }
+
+  async sendInteractiveCTAButton(
+    to: string,
+    bodyText: string,
+    buttonText: string,
+    buttonUrl: string,
+    headerText?: string,
+    footerText?: string
+  ) {
+    const response = await fetch(`${this.baseUrl}/messages`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${this.accessToken}`,
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to,
+        type: "interactive",
+        interactive: {
+          type: "cta_url",
+          ...(headerText ? { header: { text: headerText } } : {}),
+          body: {
+            text: bodyText,
+          },
+          ...(footerText ? { footer: { text: footerText } } : {}),
+          action: {
+            name: "cta_url",
+            parameters: {
+              display_text: buttonText,
+              url: buttonUrl,
+            },
+          },
+        },
+      }),
+    });
+    if (response.status === 200) {
+      const responseBody = await response.json();
+      return responseBody.messages[0].id;
+    } else {
+      console.error(
+        `[${
+          this.sendInteractiveCTAButton.name
+        }] failed to send message: ${await response.text()}`
       );
     }
   }
@@ -144,7 +192,7 @@ export class WhatsappClient {
       console.error(
         `[${
           this.sendTextMessage.name
-        }] failed to send text message: ${await response.text()}`
+        }] failed to send message: ${await response.text()}`
       );
     }
   }

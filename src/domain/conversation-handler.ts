@@ -72,10 +72,10 @@ export class ConverationHandler {
     message: string
   ): Promise<number | undefined> {
     const cleanedMessage = message.replace(/\s+/g, "").replace(/\+/g, "");
-    const phoneNumberPattern = /^\d{10,15}$/;
+    const phoneNumberPattern = /^[1-9]\d{9,14}$/;
     if (!phoneNumberPattern.test(cleanedMessage)) {
       await this.whatsapp.sendTextMessage(userId, {
-        body: "The phone number must be between 10 and 15 digits and should not contain any spaces or special characters. Try again!",
+        body: "The phone number must be between 10 and 15 digits and cannot start with 0, and should not contain any spaces or special characters. Try again!",
       });
       return STATES.ASKING_WHATSAPP_NUMBER;
     }
