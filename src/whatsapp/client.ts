@@ -16,6 +16,21 @@ export class WhatsappClient {
     this.baseUrl = `https://graph.facebook.com/v21.0/${phoneNumberId}`;
   }
 
+  private async handleResponse(
+    response: Response,
+    methodName: string
+  ): Promise<string> {
+    if (response.status === 200) {
+      const responseBody = await response.json();
+      return responseBody.messages[0].id;
+    } else {
+      console.error(
+        `[${methodName}] failed to send message: ${await response.text()}`
+      );
+      throw new Error("failed to send whatsapp message");
+    }
+  }
+
   async sendInteractiveReplyButtonsMessage(
     to: string,
     bodyText: string,
@@ -56,16 +71,10 @@ export class WhatsappClient {
         },
       }),
     });
-    if (response.status === 200) {
-      const responseBody = await response.json();
-      return responseBody.messages[0].id;
-    } else {
-      console.error(
-        `[${
-          this.sendInteractiveReplyButtonsMessage.name
-        }] failed to send message: ${await response.text()}`
-      );
-    }
+    return this.handleResponse(
+      response,
+      this.sendInteractiveReplyButtonsMessage.name
+    );
   }
 
   async sendInteractiveListMessage(
@@ -104,16 +113,7 @@ export class WhatsappClient {
         },
       }),
     });
-    if (response.status === 200) {
-      const responseBody = await response.json();
-      return responseBody.messages[0].id;
-    } else {
-      console.error(
-        `[${
-          this.sendInteractiveListMessage.name
-        }] failed to send message: ${await response.text()}`
-      );
-    }
+    return this.handleResponse(response, this.sendInteractiveListMessage.name);
   }
 
   async sendInteractiveCTAButton(
@@ -152,16 +152,7 @@ export class WhatsappClient {
         },
       }),
     });
-    if (response.status === 200) {
-      const responseBody = await response.json();
-      return responseBody.messages[0].id;
-    } else {
-      console.error(
-        `[${
-          this.sendInteractiveCTAButton.name
-        }] failed to send message: ${await response.text()}`
-      );
-    }
+    return this.handleResponse(response, this.sendInteractiveCTAButton.name);
   }
 
   async sendTextMessage(
@@ -185,15 +176,6 @@ export class WhatsappClient {
         },
       }),
     });
-    if (response.status === 200) {
-      const responseBody = await response.json();
-      return responseBody.messages[0].id;
-    } else {
-      console.error(
-        `[${
-          this.sendTextMessage.name
-        }] failed to send message: ${await response.text()}`
-      );
-    }
+    return this.handleResponse(response, this.sendTextMessage.name);
   }
 }

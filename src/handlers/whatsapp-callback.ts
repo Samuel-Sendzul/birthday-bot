@@ -9,11 +9,13 @@ export async function handleWhatsappWebhookVerification(c: Context) {
   const verifyToken = c.req.query("hub.verify_token");
 
   if (verifyToken === process.env.WHATSAPP_VERIFICATION_TOKEN) {
-    console.info("successfully verified webhook url");
+    console.info(
+      `[${handleWhatsappWebhookVerification.name}] successfully verified webhook url`
+    );
     return c.text(challenge, 200);
   } else {
     console.warn(
-      `unauthenticated webhook subscription attempt. verificationToken ${verifyToken}`
+      `[${handleWhatsappWebhookVerification.name}] unauthenticated webhook subscription attempt. verificationToken ${verifyToken}`
     );
     return c.text("UNAUTHORIZED", 401);
   }
@@ -47,19 +49,21 @@ async function handleNewMessage(change: any): Promise<void> {
       if ("text" in message) {
         const userState = conversationHandler.getUserState(message.from);
         if (!userState) {
-          const response =
-            await conversationHandler.whatsapp.sendInteractiveReplyButtonsMessage(
-              "27826229622",
-              "Birthday Bot helps you never forget to send a message to your loved ones, friends, or colleagues on their birthday!\n\n" +
-                "Set up a new birthday reminder to receive a notification on their special day, complete with a contact button for quick and easy messaging!",
-              [{ id: "new-birthday", title: "New Birthday" }],
-              "Welcome to Birthday Bot 🥳",
-              "Never forget to send a birthday message again!"
+          try {
+            const response = await conversationHandler.sendMainMenu(
+              message.from
             );
-          console.debug(`sent interactive message with id '${response}'`);
+            console.debug(
+              `[${handleNewMessage.name}] sent interactive message with id '${response}'`
+            );
+          } catch (error) {
+            console.error(
+              `[${handleNewMessage.name}] failed to send menu message with error ${error}}`
+            );
+          }
           continue;
         }
-        conversationHandler.handleNewBirthdayConversationMessage(
+        await conversationHandler.handleNewBirthdayConversationMessage(
           message.from,
           message.text.body
         );
@@ -67,12 +71,32 @@ async function handleNewMessage(change: any): Promise<void> {
       if ("interactive" in message) {
         if (message.interactive.type === "button_reply") {
           console.debug(
-            `received button reply with id '${message.interactive.button_reply.id}' and title '${message.interactive.button_reply.title}'`
+            `[${handleNewMessage.name}] received button reply with id '${message.interactive.button_reply.id}' and title '${message.interactive.button_reply.title}'`
           );
-          conversationHandler.handleNewBirthdayConversationMessage(
-            message.from,
-            message.interactive.button_reply.title
-          );
+
+          switch (message.interactive.button_reply.id) {
+            case "new-birthday": {
+              await conversationHandler.handleNewBirthdayConversationMessage(
+                message.from,
+                message.interactive.button_reply.title
+              );
+              return;
+            }
+            case "my-birthdays":
+            case "support": {
+              console.log("support or my-birthdays");
+              return;
+            }
+            case "main-menu": {
+              conversationHandler.clearUserState(message.from);
+              await conversationHandler.sendMainMenu(message.from);
+              return;
+            }
+            default:
+              console.error(
+                `[${handleNewMessage.name} unhandled message type received: ${message.interactive.button_reply.id}]`
+              );
+          }
         }
       }
     }
@@ -84,7 +108,7 @@ function handleStatusUpdate(change): void {
     const statuses = change.value.statuses;
     for (const status of statuses) {
       console.debug(
-        `message with id '${status.id}' status updated to '${status.status}' at time ${status.timestamp} - conversation id '${status.conversation.id}' expires '${status.conversation.expiration_timestamp}'`
+        `[${handleStatusUpdate.name}] message with id '${status.id}' status updated to '${status.status}' at time ${status.timestamp} - conversation id '${status.conversation.id}' expires '${status.conversation.expiration_timestamp}'`
       );
     }
   }
