@@ -5,3 +5,4 @@ dist
 persisted-data
 
 *.log
+*.pem
