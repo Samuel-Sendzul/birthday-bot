@@ -1,0 +1,1 @@
+firebase emulators:start --import persisted-data --export-on-exit persisted-data

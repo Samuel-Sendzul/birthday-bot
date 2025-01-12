@@ -1,4 +1,7 @@
+import { createReminder } from "../infrastructure/reminders";
 import { WhatsappClient } from "../whatsapp/client";
+import { MONTHS } from "./consts";
+import { getDaySuffix } from "./utils";
 
 const STATES = {
   ASKING_NAME: 1,
@@ -8,21 +11,6 @@ const STATES = {
   ASKING_WHATSAPP_NUMBER: 5,
   ASKING_WHICH_REMINDER: 6,
   ASKING_REMINDER_ACTION: 7,
-};
-
-const MONTHS = {
-  1: "January",
-  2: "February",
-  3: "March",
-  4: "April",
-  5: "May",
-  6: "June",
-  7: "July",
-  8: "August",
-  9: "September",
-  10: "October",
-  11: "November",
-  12: "December",
 };
 
 export class ConverationHandler {
@@ -123,7 +111,7 @@ export class ConverationHandler {
 
       await this.whatsapp.sendInteractiveReplyButtonsMessage(
         userId,
-        `You entered ${day} for a birthday on the ${day}${this._getDaySuffix(
+        `You entered ${day} for a birthday on the ${day}${getDaySuffix(
           day
         )} of ${
           MONTHS[month]
@@ -138,30 +126,15 @@ export class ConverationHandler {
       throw error;
     }
   }
-  private _getDaySuffix(day: number): string {
-    if (day >= 11 && day <= 13) {
-      return "th";
-    }
-    switch (day % 10) {
-      case 1:
-        return "st";
-      case 2:
-        return "nd";
-      case 3:
-        return "rd";
-      default:
-        return "th";
-    }
-  }
 
   async _saveBirthdayReminder(
     userId: string,
     message: string
   ): Promise<number | undefined> {
     try {
-      const phoneNumber = message.replace(/\s+/g, "").replace(/\+/g, "");
-      const phoneNumberPattern = /^[1-9]\d{9,14}$/;
-      if (!phoneNumberPattern.test(phoneNumber)) {
+      const whatsappNumber = message.replace(/\s+/g, "").replace(/\+/g, "");
+      const whatsappNumberPattern = /^[1-9]\d{9,14}$/;
+      if (!whatsappNumberPattern.test(whatsappNumber)) {
         await this.whatsapp.sendInteractiveReplyButtonsMessage(
           userId,
           "The phone number must be between 10 and 15 digits and must start with an area code, e.g. 27. Try again!",
@@ -173,11 +146,22 @@ export class ConverationHandler {
       const name = this.getUserData(userId, "name");
       const day = this.getUserData(userId, "day");
       const month = this.getUserData(userId, "month");
+
+      const reminder = await createReminder(
+        userId,
+        name,
+        day,
+        month,
+        whatsappNumber
+      );
+
       await this.whatsapp.sendInteractiveReplyButtonsMessage(
         userId,
-        `Your reminder for ${name} is set for the ${day}${this._getDaySuffix(
-          day
-        )} of ${MONTHS[month]} 🥳`,
+        `Your reminder for ${reminder.name} is set for the ${
+          reminder.birthdayDay
+        }${getDaySuffix(reminder.birthdayDay)} of ${
+          MONTHS[reminder.birthdayMonth]
+        } 🥳`,
         [{ id: "main-menu", title: "Main Menu" }]
       );
     } catch (error) {

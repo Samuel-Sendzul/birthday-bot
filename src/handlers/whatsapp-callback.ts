@@ -1,6 +1,9 @@
 import { Context } from "hono";
 import crypto from "crypto";
 import { ConverationHandler } from "../domain/conversation-handler";
+import { getReminders } from "../infrastructure/reminders";
+import { MONTHS } from "../domain/consts";
+import { getDaySuffix } from "../domain/utils";
 
 const conversationHandler = new ConverationHandler();
 
@@ -88,15 +91,36 @@ async function handleNewMessage(change: any): Promise<void> {
               return;
             }
             case "my-birthdays":
-              await conversationHandler.whatsapp.sendInteractiveReplyButtonsMessage(
-                message.from,
-                "1. Kai on 10 March",
-                [
-                  { id: "manage-reminders", title: "Manage Reminders" },
-                  { id: "main-menu", title: "Main Menu" },
-                ],
-                "Your Birthday Reminders"
-              );
+              const reminders = await getReminders(message.from);
+              if (reminders.length > 0) {
+                const remindersString = reminders
+                  .map((reminder, index) => {
+                    const daySuffix = getDaySuffix(reminder.birthdayDay);
+                    return `${index + 1}. ${reminder.name} on the ${
+                      reminder.birthdayDay
+                    }${daySuffix} ${MONTHS[reminder.birthdayMonth]}`;
+                  })
+                  .join("\n");
+                await conversationHandler.whatsapp.sendInteractiveReplyButtonsMessage(
+                  message.from,
+                  remindersString,
+                  [
+                    { id: "manage-reminders", title: "Manage Reminders" },
+                    { id: "main-menu", title: "Main Menu" },
+                  ],
+                  "Your Birthday Reminders"
+                );
+              } else {
+                await conversationHandler.whatsapp.sendInteractiveReplyButtonsMessage(
+                  message.from,
+                  "You don't have any birthday reminders set!",
+                  [
+                    { id: "new-birthday", title: "New Birthday" },
+                    { id: "main-menu", title: "Main Menu" },
+                  ]
+                );
+              }
+
               return;
             case "manage-reminders": {
               await conversationHandler.handleManageReminderConversationMessage(
@@ -113,7 +137,12 @@ async function handleNewMessage(change: any): Promise<void> {
               return;
             }
             case "support": {
-              console.log("support or my-birthdays");
+              await conversationHandler.whatsapp.sendInteractiveCTAButton(
+                message.from,
+                "Message Sam on WhatsApp for support!",
+                "Open chat",
+                "https://wa.me/27826229622"
+              );
               return;
             }
             case "main-menu": {
