@@ -7,7 +7,7 @@ export default function Home() {
       <div className="flex flex-col items-center justify-center gap-8">
         <div className="flex flex-row items-center gap-2">
           <Image
-            src="/logo.svg"
+            src="/logo.jpg"
             width={300}
             height={225}
             alt="BirthdayBot"
@@ -31,7 +31,7 @@ export default function Home() {
         onClick={() => window.open("https://wa.me/15556285236", "_blank")}
       >
         <Image
-          src="/WhatsAppButtonWhiteLarge.svg"
+          src="/WhatsAppButtonWhiteLarge.png"
           width={207}
           height={48}
           alt="BirthdayBot"
