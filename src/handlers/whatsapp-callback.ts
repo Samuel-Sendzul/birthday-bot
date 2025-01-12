@@ -67,6 +67,11 @@ async function handleNewMessage(change: any): Promise<void> {
           message.from,
           message.text.body
         );
+
+        await conversationHandler.handleManageReminderConversationMessage(
+          message.from,
+          message.text.body
+        );
       }
       if ("interactive" in message) {
         if (message.interactive.type === "button_reply") {
@@ -83,6 +88,30 @@ async function handleNewMessage(change: any): Promise<void> {
               return;
             }
             case "my-birthdays":
+              await conversationHandler.whatsapp.sendInteractiveReplyButtonsMessage(
+                message.from,
+                "1. Kai on 10 March",
+                [
+                  { id: "manage-reminders", title: "Manage Reminders" },
+                  { id: "main-menu", title: "Main Menu" },
+                ],
+                "Your Birthday Reminders"
+              );
+              return;
+            case "manage-reminders": {
+              await conversationHandler.handleManageReminderConversationMessage(
+                message.from,
+                message.interactive.button_reply.title
+              );
+              return;
+            }
+            case "delete-reminder": {
+              await conversationHandler.handleManageReminderConversationMessage(
+                message.from,
+                message.interactive.button_reply.title
+              );
+              return;
+            }
             case "support": {
               console.log("support or my-birthdays");
               return;

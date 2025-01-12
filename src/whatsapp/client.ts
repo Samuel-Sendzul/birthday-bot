@@ -39,8 +39,12 @@ export class WhatsappClient {
       title: string;
     }[],
     headerText?: string,
+    headerImageId?: string,
     footer?: string
   ): Promise<string> {
+    if (headerText && headerImageId) {
+      throw new Error("header text and image Id can't both be defined");
+    }
     const response = await fetch(`${this.baseUrl}/messages`, {
       method: "POST",
       headers: {
@@ -55,6 +59,9 @@ export class WhatsappClient {
         interactive: {
           type: "button",
           ...(headerText ? { header: { type: "text", text: headerText } } : {}),
+          ...(headerImageId
+            ? { header: { type: "image", image: { id: headerImageId } } }
+            : {}),
           body: {
             text: bodyText,
           },

@@ -6,6 +6,8 @@ const STATES = {
   ASKING_BIRTHDAY_DAY: 3,
   ASKING_CONTACT: 4,
   ASKING_WHATSAPP_NUMBER: 5,
+  ASKING_WHICH_REMINDER: 6,
+  ASKING_REMINDER_ACTION: 7,
 };
 
 const MONTHS = {
@@ -186,6 +188,62 @@ export class ConverationHandler {
     }
   }
 
+  async _askWhichReminder(userId: string, message: string) {
+    try {
+      await this.whatsapp.sendTextMessage(userId, {
+        body: "*Which reminder would you like to manage? Enter a number from your reminders list below, e.g. 1*\n\n1. Kai on 10 March\n2. Kayla on 20 July",
+      });
+      return STATES.ASKING_WHICH_REMINDER;
+    } catch (error) {
+      console.error(
+        `[${this._askWhichReminder.name}] failed to send message asking for reminder with error: ${error}`
+      );
+      throw error;
+    }
+  }
+
+  async _askingReminderAction(userId: string, message: string) {
+    try {
+      const reminder = parseInt(message, 10);
+      if (isNaN(reminder) || reminder < 1 || reminder > 5) {
+        await this.whatsapp.sendInteractiveReplyButtonsMessage(
+          userId,
+          "The reminder must be a number between 1 and 5! Try again",
+          [{ id: "main-menu", title: "Main Menu" }]
+        );
+        return STATES.ASKING_WHICH_REMINDER;
+      }
+      this.setUserData(userId, "reminder", reminder);
+
+      await this.whatsapp.sendInteractiveReplyButtonsMessage(
+        userId,
+        `What would you like to do with the reminder for Kai's birthday on the 10th of March?`,
+        [
+          { id: "delete-reminder", title: "Delete Reminder" },
+          { id: "main-menu", title: "Main Menu" },
+        ]
+      );
+      return STATES.ASKING_REMINDER_ACTION;
+    } catch (error) {
+      console.error(
+        `[${this._askingReminderAction.name}] failed to send message asking for reminder action with error: ${error}`
+      );
+      throw error;
+    }
+  }
+
+  async _deleteReminder(userId: string, message: string) {
+    this.clearUserState(userId);
+    await this.whatsapp.sendInteractiveReplyButtonsMessage(
+      userId,
+      `Reminder for Kai's birthday on the 10th of March has been successfully deleted ✅`,
+      [
+        { id: "new-birthday", title: "New Birthday" },
+        { id: "main-menu", title: "Main Menu" },
+      ]
+    );
+  }
+
   async handleNewBirthdayConversationMessage(userId: string, message: string) {
     try {
       const conversation = this.conversations.get(userId);
@@ -230,18 +288,51 @@ export class ConverationHandler {
     }
   }
 
-  async sendMainMenu(to: string): Promise<void> {
-    await this.whatsapp.sendInteractiveReplyButtonsMessage(
+  async handleManageReminderConversationMessage(
+    userId: string,
+    message: string
+  ) {
+    try {
+      const conversation = this.conversations.get(userId);
+      let newState: number;
+      if (!conversation) {
+        newState = await this._askWhichReminder(userId, message);
+        this.conversations.set(userId, newState);
+        return;
+      }
+
+      switch (conversation) {
+        case STATES.ASKING_WHICH_REMINDER: {
+          const newState = await this._askingReminderAction(userId, message);
+          this.conversations.set(userId, newState);
+          return;
+        }
+        case STATES.ASKING_REMINDER_ACTION: {
+          await this._deleteReminder(userId, message);
+          this.clearUserState(userId);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error(
+        `[${this.handleManageReminderConversationMessage.name}] failed to handle manage reminder conversation message with error: ${error}`
+      );
+      throw error;
+    }
+  }
+
+  async sendMainMenu(to: string): Promise<string> {
+    return await this.whatsapp.sendInteractiveReplyButtonsMessage(
       to,
-      "Birthday Bot helps you never forget to send a message to your loved ones, friends, or colleagues on their birthday!\n\n" +
-        "Set up a new birthday reminder to receive a notification on their special day, complete with a contact button for quick and easy messaging!",
+      "Never miss a birthday message again!\n\nSet a reminder and get notified with a quick contact button for easy messaging.",
       [
         { id: "new-birthday", title: "New Birthday 🎉" },
         { id: "my-birthdays", title: "My Birthdays 📋" },
         { id: "support", title: "Support 🙋‍♀️" },
       ],
-      "Welcome to Birthday Bot 🥳",
-      "Never forget to send a birthday message again!"
+      undefined,
+      "477209338762044",
+      "Birthday Bot™"
     );
   }
 
