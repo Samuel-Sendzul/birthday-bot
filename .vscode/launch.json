@@ -6,11 +6,11 @@
       "request": "launch",
       "name": "Launch Program",
       "skipFiles": ["<node_internals>/**"],
-      "program": "${workspaceFolder}/src/server.ts",
-      "preLaunchTask": "tsc: build - tsconfig.json",
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "program": "${workspaceFolder}/whatsapp-bot/src/server.ts",
+      "preLaunchTask": "tsc: build - whatsapp-bot/tsconfig.json",
+      "outFiles": ["${workspaceFolder}/whatsapp-bot/dist/**/*.js"],
       "sourceMaps": true,
-      "envFile": "${workspaceFolder}/.env.local"
+      "envFile": "${workspaceFolder}/whatsapp-bot/.env.local"
     }
   ]
 }
