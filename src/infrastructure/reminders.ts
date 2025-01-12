@@ -57,3 +57,7 @@ export async function createReminder(
   };
   return reminder;
 }
+
+export async function deleteReminder(reminderId: string): Promise<void> {
+  await db.collection("reminders").doc(reminderId).delete();
+}

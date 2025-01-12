@@ -1,7 +1,8 @@
-import { createReminder } from "../infrastructure/reminders";
+import { createReminder, deleteReminder } from "../infrastructure/reminders";
 import { WhatsappClient } from "../whatsapp/client";
 import { MONTHS } from "./consts";
-import { getDaySuffix } from "./utils";
+import { Reminder } from "./types";
+import { getDaySuffix, makeRemindersString } from "./utils";
 
 const STATES = {
   ASKING_NAME: 1,
@@ -33,9 +34,11 @@ export class ConverationHandler {
       await this.whatsapp.sendTextMessage(userId, {
         body: "*Follow the prompts to configure a new reminder!*",
       });
-      await this.whatsapp.sendTextMessage(userId, {
-        body: "Enter the name of the person whose birthday you are setting a reminder for",
-      });
+      await this.whatsapp.sendInteractiveReplyButtonsMessage(
+        userId,
+        "Enter the name of the person whose birthday you are setting a reminder for",
+        [{ id: "main-menu", title: "Main Menu" }]
+      );
       return STATES.ASKING_NAME;
     } catch (error) {
       console.error(
@@ -174,9 +177,14 @@ export class ConverationHandler {
 
   async _askWhichReminder(userId: string, message: string) {
     try {
-      await this.whatsapp.sendTextMessage(userId, {
-        body: "*Which reminder would you like to manage? Enter a number from your reminders list below, e.g. 1*\n\n1. Kai on 10 March\n2. Kayla on 20 July",
-      });
+      const remindersString = makeRemindersString(
+        this.getUserData(userId, "reminders") as Reminder[]
+      );
+      await this.whatsapp.sendInteractiveReplyButtonsMessage(
+        userId,
+        `*Which reminder would you like to manage? Enter a number from your reminders list below, e.g. 1*\n\n${remindersString}`,
+        [{ id: "main-menu", title: "Main Menu" }]
+      );
       return STATES.ASKING_WHICH_REMINDER;
     } catch (error) {
       console.error(
@@ -188,20 +196,35 @@ export class ConverationHandler {
 
   async _askingReminderAction(userId: string, message: string) {
     try {
-      const reminder = parseInt(message, 10);
-      if (isNaN(reminder) || reminder < 1 || reminder > 5) {
+      const reminderIndex = parseInt(message, 10);
+      const reminders = this.getUserData(userId, "reminders");
+      if (
+        isNaN(reminderIndex) ||
+        reminderIndex < 1 ||
+        reminderIndex > reminders.length
+      ) {
         await this.whatsapp.sendInteractiveReplyButtonsMessage(
           userId,
-          "The reminder must be a number between 1 and 5! Try again",
+          `The reminder must be a valid number from your reminders list! Try again`,
           [{ id: "main-menu", title: "Main Menu" }]
         );
         return STATES.ASKING_WHICH_REMINDER;
       }
-      this.setUserData(userId, "reminder", reminder);
+      this.setUserData(
+        userId,
+        "selectedReminder",
+        reminders[reminderIndex - 1]
+      );
 
       await this.whatsapp.sendInteractiveReplyButtonsMessage(
         userId,
-        `What would you like to do with the reminder for Kai's birthday on the 10th of March?`,
+        `What would you like to do with the reminder for ${
+          reminders[reminderIndex - 1].name
+        }'s birthday on the ${
+          reminders[reminderIndex - 1].birthdayDay
+        }${getDaySuffix(reminders[reminderIndex - 1].birthdayDay)} of ${
+          MONTHS[reminders[reminderIndex - 1].birthdayMonth]
+        }?`,
         [
           { id: "delete-reminder", title: "Delete Reminder" },
           { id: "main-menu", title: "Main Menu" },
@@ -217,10 +240,18 @@ export class ConverationHandler {
   }
 
   async _deleteReminder(userId: string, message: string) {
+    const selectedReminder = this.getUserData(userId, "selectedReminder");
+    await deleteReminder(selectedReminder.id);
+
     this.clearUserState(userId);
+
     await this.whatsapp.sendInteractiveReplyButtonsMessage(
       userId,
-      `Reminder for Kai's birthday on the 10th of March has been successfully deleted ✅`,
+      `Reminder for ${selectedReminder.name} on the ${
+        selectedReminder.birthdayDay
+      }${getDaySuffix(selectedReminder.birthdayDay)} of ${
+        MONTHS[selectedReminder.birthdayMonth]
+      } has been successfully deleted ✅`,
       [
         { id: "new-birthday", title: "New Birthday" },
         { id: "main-menu", title: "Main Menu" },
@@ -232,7 +263,7 @@ export class ConverationHandler {
     try {
       const conversation = this.conversations.get(userId);
       let newState: number;
-      if (!conversation) {
+      if (!conversation && message === "new-birthday") {
         newState = await this._askName(userId, message);
         this.conversations.set(userId, newState);
         return;
@@ -279,7 +310,7 @@ export class ConverationHandler {
     try {
       const conversation = this.conversations.get(userId);
       let newState: number;
-      if (!conversation) {
+      if (!conversation && message === "manage-reminders") {
         newState = await this._askWhichReminder(userId, message);
         this.conversations.set(userId, newState);
         return;

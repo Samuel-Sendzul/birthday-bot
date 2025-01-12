@@ -3,7 +3,7 @@ import crypto from "crypto";
 import { ConverationHandler } from "../domain/conversation-handler";
 import { getReminders } from "../infrastructure/reminders";
 import { MONTHS } from "../domain/consts";
-import { getDaySuffix } from "../domain/utils";
+import { getDaySuffix, makeRemindersString } from "../domain/utils";
 
 const conversationHandler = new ConverationHandler();
 
@@ -86,21 +86,19 @@ async function handleNewMessage(change: any): Promise<void> {
             case "new-birthday": {
               await conversationHandler.handleNewBirthdayConversationMessage(
                 message.from,
-                message.interactive.button_reply.title
+                message.interactive.button_reply.id
               );
               return;
             }
             case "my-birthdays":
               const reminders = await getReminders(message.from);
               if (reminders.length > 0) {
-                const remindersString = reminders
-                  .map((reminder, index) => {
-                    const daySuffix = getDaySuffix(reminder.birthdayDay);
-                    return `${index + 1}. ${reminder.name} on the ${
-                      reminder.birthdayDay
-                    }${daySuffix} ${MONTHS[reminder.birthdayMonth]}`;
-                  })
-                  .join("\n");
+                conversationHandler.setUserData(
+                  message.from,
+                  "reminders",
+                  reminders
+                );
+                const remindersString = makeRemindersString(reminders);
                 await conversationHandler.whatsapp.sendInteractiveReplyButtonsMessage(
                   message.from,
                   remindersString,
@@ -113,7 +111,7 @@ async function handleNewMessage(change: any): Promise<void> {
               } else {
                 await conversationHandler.whatsapp.sendInteractiveReplyButtonsMessage(
                   message.from,
-                  "You don't have any birthday reminders set!",
+                  "*You don't have any birthday reminders set yet!*\n\nTry adding a new birthday by tapping 'New Birthday' below.",
                   [
                     { id: "new-birthday", title: "New Birthday" },
                     { id: "main-menu", title: "Main Menu" },
@@ -125,14 +123,14 @@ async function handleNewMessage(change: any): Promise<void> {
             case "manage-reminders": {
               await conversationHandler.handleManageReminderConversationMessage(
                 message.from,
-                message.interactive.button_reply.title
+                message.interactive.button_reply.id
               );
               return;
             }
             case "delete-reminder": {
               await conversationHandler.handleManageReminderConversationMessage(
                 message.from,
-                message.interactive.button_reply.title
+                message.interactive.button_reply.id
               );
               return;
             }
@@ -166,7 +164,15 @@ function handleStatusUpdate(change): void {
     const statuses = change.value.statuses;
     for (const status of statuses) {
       console.debug(
-        `[${handleStatusUpdate.name}] message with id '${status.id}' status updated to '${status.status}' at time ${status.timestamp} - conversation id '${status.conversation.id}' expires '${status.conversation.expiration_timestamp}'`
+        `[${handleStatusUpdate.name}] message with id '${
+          status.id
+        }' status updated to '${status.status}' at time ${
+          status.timestamp
+        } - conversation id '${status.conversation.id}'${
+          status.status === "sent"
+            ? ` expires '${status.conversation.expiration_timestamp}'`
+            : ""
+        }`
       );
     }
   }
