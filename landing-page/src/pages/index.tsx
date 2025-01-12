@@ -28,7 +28,7 @@ export default function Home() {
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        onClick={() => window.open("https://wa.me/27826229622", "_blank")}
+        onClick={() => window.open("https://wa.me/15556285236", "_blank")}
       >
         <Image
           src="/WhatsAppButtonWhiteLarge.svg"
