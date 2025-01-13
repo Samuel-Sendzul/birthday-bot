@@ -1,5 +1,5 @@
 import { getReminders } from "./infrastructure/reminders";
-import { WhatsappClient } from "./whatsapp/client";
+import { WhatsappClient } from "./whatsapp-business/client";
 
 const whatsapp = new WhatsappClient(
   process.env.WHATSAPP_ACCESS_TOKEN,

@@ -6,3 +6,4 @@ persisted-data
 
 *.log
 *.pem
+.wwebjs_*

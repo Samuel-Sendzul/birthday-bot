@@ -1,5 +1,5 @@
 import { createReminder, deleteReminder } from "../infrastructure/reminders";
-import { WhatsappClient } from "../whatsapp/client";
+import { WhatsappClient } from "../whatsapp-business/client";
 import { MONTHS } from "./consts";
 import { Reminder } from "./types";
 import { getDaySuffix, makeRemindersString } from "./utils";

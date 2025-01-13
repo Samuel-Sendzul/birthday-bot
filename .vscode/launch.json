@@ -11,6 +11,17 @@
       "outFiles": ["${workspaceFolder}/whatsapp-bot/dist/**/*.js"],
       "sourceMaps": true,
       "envFile": "${workspaceFolder}/whatsapp-bot/.env.local"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Whatsapp Emulator",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/whatsapp-bot/src/whatsapp/client.ts",
+      "preLaunchTask": "tsc: build - whatsapp-bot/tsconfig.json",
+      "outFiles": ["${workspaceFolder}/whatsapp-bot/dist/**/*.js"],
+      "sourceMaps": true,
+      "envFile": "${workspaceFolder}/whatsapp-bot/.env.local"
     }
   ]
 }

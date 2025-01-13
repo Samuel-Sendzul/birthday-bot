@@ -17,6 +17,7 @@
     "@hono/node-server": "^1.13.7",
     "@types/node": "^22.10.5",
     "firebase-admin": "^13.0.2",
-    "hono": "^4.6.15"
+    "hono": "^4.6.15",
+    "whatsapp-web.js": "^1.26.0"
   }
 }
