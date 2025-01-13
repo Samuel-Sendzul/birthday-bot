@@ -2,8 +2,7 @@ import { Context } from "hono";
 import crypto from "crypto";
 import { ConverationHandler } from "../domain/conversation-handler";
 import { getReminders } from "../infrastructure/reminders";
-import { MONTHS } from "../domain/consts";
-import { getDaySuffix, makeRemindersString } from "../domain/utils";
+import { makeRemindersString } from "../domain/utils";
 
 const conversationHandler = new ConverationHandler();
 

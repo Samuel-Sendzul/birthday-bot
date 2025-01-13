@@ -1,3 +1,4 @@
+import { getReminders } from "./infrastructure/reminders";
 import { WhatsappClient } from "./whatsapp/client";
 
 const whatsapp = new WhatsappClient(
@@ -6,10 +7,19 @@ const whatsapp = new WhatsappClient(
 );
 
 export async function sendBirthdayReminders() {
-  await whatsapp.sendInteractiveCTAButton(
-    "27826229622",
-    "It's Kayla ❤️'s birthday today! Send them a message to make their day 🥳",
-    "Open chat",
-    "https://wa.me/27828062636"
-  );
+  const today = new Date();
+  const currentMonth = today.getMonth() + 1; // getMonth() returns 0-11, so add 1
+  const currentDay = today.getDate();
+
+  const reminders = await getReminders(undefined, currentMonth, currentDay);
+
+  for (const reminder of reminders) {
+    await whatsapp.sendInteractiveCTAButton(
+      reminder.userId,
+      `It's ${reminder.name}'s birthday today! Send them a message to make their day 🥳`,
+      "Open chat",
+      `https://wa.me/${reminder.whatsappNumber}`
+    );
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait for 1 second
+  }
 }

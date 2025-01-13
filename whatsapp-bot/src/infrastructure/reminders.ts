@@ -1,11 +1,27 @@
 import { Reminder } from "../domain/types";
 import { db } from "./firebase/db";
 
-export async function getReminders(userId: string): Promise<Reminder[]> {
-  const snapshot = await db
-    .collection("reminders")
-    .where("userId", "==", userId)
-    .get();
+export async function getReminders(
+  userId?: string,
+  birthdayMonth?: number,
+  birthdayDay?: number
+): Promise<Reminder[]> {
+  const remindersRef = db.collection("reminders");
+
+  if (!userId && !(birthdayMonth && birthdayDay)) {
+    throw new Error(
+      "either userId or birthdayMonth and birthdayDay must be defined"
+    );
+  }
+
+  const queryRef = userId
+    ? remindersRef.where("userId", "==", userId)
+    : remindersRef
+        .where("birthdayMonth", "==", birthdayMonth)
+        .where("bithdayDay", "==", birthdayDay);
+
+  const snapshot = await queryRef.get();
+
   const reminders: Reminder[] = [];
   snapshot.forEach((doc) => {
     const docData = doc.data();
